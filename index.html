@@ -14,37 +14,38 @@
     <main>
         <section>
             <div class="container">
-                <p>Here you can test your knowledge through quizzes, test different subjects.</p>
-                <div class="subject">
-                    <p>Choose a topic for your quiz and press start</p>
-                    <div class="subject-option">
-                        <input type="checkbox" id="healthCare" name="subject" value="Animal health care">
-                        <label for="healthCare">Animal health care</label>
-                    </div>
-                    <div class="subject-option">
-                        <input type="checkbox" id="sweden" name="subject" value="Sweden">
-                        <label for="sweden">Sweden</label>
-                    </div>
-                    <button id="startQuiz">Start quiz</button>
+                <div id="subjectSelection">
+                    <p>Here you can test your knowledge through quizzes, test different subjects.</p>
+                    <hr>
+                    <div class="subject">
+                        <p>Choose a topic for your quiz and press start</p>
+                        <div class="subject-option" id="healthCare" data-value="Animal health care">
+                            Animal health care
+                        </div>
+                        <div class="subject-option" id="sweden" data-value="Sweden">
+                            Sweden
+                        </div>
+                    </div>    
+                    <button id="startQuiz">Start quiz</button>                
                 </div>
                 <div id="quizContainer" class="hidden" style="display: none;">
                     <div id="question"></div>
-                    <div id="answers"></div>
+                    <div class="parent">
+                        <div class="div1"></div>
+                        <div class="div2"></div>
+                        <div class="div3"></div>
+                        <div class="div4"></div>
+                    </div>
                     <button id="nextQuestion" class="hidden">Next Question</button>
-                </div>
-                
-                <div class="parent">
-                    <div class="div1"></div>
-                    <div class="div2"></div>
-                    <div class="div3"></div>
-                    <div class="div4"></div>
                 </div>
                 <div class="result"></div>
             </div>
         </section>
     </main>
     <footer>
-        
+        <a href="mailto:cobra.quiz@lalala.com">Mail</a>
+        <a href="https://github.com/SandraLinnea">GitHub repo</a>
     </footer>
 </body>
 </html>
+

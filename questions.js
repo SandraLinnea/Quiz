@@ -1,4 +1,3 @@
-// questions.js
 export const quizData = {
     "Animal health care": [
         {

@@ -1,78 +1,106 @@
 import { quizData } from './questions.js';
 
-document.addEventListener('DOMContentLoaded', () => {
-    let currentQuestionIndex = 0;
-    let selectedSubject = "";
+document.addEventListener('DOMContentLoaded', function() { 
+    document.getElementById('startQuiz').addEventListener('click', EventHandlers.startQuiz);
+    document.getElementById('nextQuestion').addEventListener('click', EventHandlers.nextQuestion);
+    document.querySelectorAll('.subject-option').forEach(option => {
+        option.addEventListener('click', selectSubject); // se till att selectSubject är definierad
+    });
+});
 
-    // Funktionen för att starta quizet
-    document.getElementById('startQuiz').addEventListener('click', function() {
-        const checkboxes = document.querySelectorAll('input[name="subject"]');
-        selectedSubject = Array.from(checkboxes)
-            .filter(checkbox => checkbox.checked)
-            .map(checkbox => checkbox.value);
+// Definiera funktionen selectSubject här
+function selectSubject(event) {
+    const options = document.querySelectorAll('.subject-option');
+    options.forEach(option => option.classList.remove('selected')); // Ta bort 'selected' från alla alternativ
+    event.currentTarget.classList.add('selected'); // Lägg till 'selected' på det aktuella alternativet
+}
 
-        if (selectedSubject.length > 0) {
-            document.querySelector('.subject').style.display = 'none';
+let questionIndex = 0;
+let selectedSubject = "";
+
+let EventHandlers = (function() {
+    function startQuiz() {
+        const selectedSubjectElement = document.querySelector('.subject-option.selected');
+
+        if (selectedSubjectElement) {
+            selectedSubject = selectedSubjectElement.getAttribute('data-value'); // Hämta värdet från data-attributet
+
+            // Döljer ämnesval och texten när quizet startar
+            document.getElementById('subjectSelection').style.display = 'none';
+                
+            // Visa quiz-delen
             document.getElementById('quizContainer').style.display = 'block';
             showQuestion();
         } else {
-            alert('Vänligen välj minst ett ämne.');
+            alert("You have to select a subject to start the quiz!");
         }
-    });
+    }
 
-    // Funktionen för att visa frågor
     function showQuestion() {
-        const questionData = quizData[selectedSubject[0]][currentQuestionIndex]; // Hämta den aktuella frågan
-        document.getElementById('question').innerText = questionData.question;
+        const questionBox = quizData[selectedSubject]; // Använd rätt index för quizData
+        if (questionIndex < questionBox.length) { // Kontrollera om det finns fler frågor
+            const currentQuestion = questionBox[questionIndex];
+            document.getElementById('question').innerText = currentQuestion.question;
 
-        const answersContainer = document.getElementById('answers');
-        answersContainer.innerHTML = ''; // Rensa tidigare svar
+            const answersContainer = document.querySelector('.parent'); 
+            answersContainer.innerHTML = '';  // Rensa tidigare svar
 
-        questionData.answers.forEach((answer, index) => {
-            const answerElement = document.createElement('div');
-            answerElement.innerHTML = `
-                <input type="radio" name="answer" value="${index}" id="answer${index}">
-                <label for="answer${index}">${answer}</label>
-            `;
-            answersContainer.appendChild(answerElement);
-        });
-
-        // Döljer "Next Question"-knappen tills en svarsalternativ är valt
-        document.getElementById('nextQuestion').classList.add('hidden');
-
-        // Lägg till en event listener på radioknapparna
-        const radios = document.getElementsByName('answer');
-        radios.forEach(radio => {
-            radio.addEventListener('change', () => {
-                document.getElementById('nextQuestion').classList.remove('hidden');
+            currentQuestion.answers.forEach((answer, index) => {
+                const answerDiv = document.createElement('div');
+                answerDiv.innerText = answer;
+                answerDiv.classList.add(`div${index + 1}`); 
+                answerDiv.addEventListener('click', () => checkAnswer(index, answerDiv)); // Lägg till click-handler
+                answersContainer.appendChild(answerDiv);
             });
+
+            document.getElementById('nextQuestion').style.display = 'none'; // Göm knappen tills användaren svarat
+        }
+    }
+
+    function checkAnswer(selectedIndex, selectedDiv) {
+        const questionBox = quizData[selectedSubject];
+        const correctAnswerIndex = questionBox[questionIndex].correct;
+
+        // Kontrollera om användarens svar är rätt
+        if (selectedIndex === correctAnswerIndex) {
+            selectedDiv.style.border = "2px solid green"; // Grön ram för rätt svar
+            selectedDiv.style.borderRadius = "50%"; // Gör den rund
+        } else {
+            selectedDiv.style.border = "2px solid red"; // Röd ram för fel svar
+            selectedDiv.style.borderRadius = "50%"; // Gör den rund
+        }
+
+        // Visa den rätta svaret också med grön ram om det inte var det som valdes
+        const answersContainer = document.querySelector('.parent');
+        const correctAnswerDiv = answersContainer.children[correctAnswerIndex];
+        correctAnswerDiv.style.border = "2px solid green"; // Grön ram för rätt svar
+        correctAnswerDiv.style.borderRadius = "50%"; // Gör den rund
+
+        // Visa knappen för nästa fråga efter att användaren har svarat
+        document.getElementById('nextQuestion').style.display = 'block';
+
+        // Inaktivera klick på alla svar efter att ett val gjorts
+        Array.from(answersContainer.children).forEach(child => {
+            child.style.pointerEvents = 'none'; // Inaktivera klick efter första valet
         });
     }
 
-    // Nästa fråga
-    document.getElementById('nextQuestion').addEventListener('click', function() {
-        const selectedAnswer = document.querySelector('input[name="answer"]:checked');
-        if (!selectedAnswer) return; // Gör inget om inget svar har valts
-
-        const answerIndex = parseInt(selectedAnswer.value);
-        const questionData = quizData[selectedSubject[0]][currentQuestionIndex];
-
-        if (answerIndex === questionData.correct) {
-            alert("Rätt svar!");
+    function nextQuestion() {
+        questionIndex++;
+        // Om vi fortfarande har frågor kvar, visa nästa fråga
+        const questionBox = quizData[selectedSubject];
+        if (questionIndex < questionBox.length) {
+            showQuestion();  // Ladda nästa fråga
         } else {
-            alert("Fel svar. Rätt svar är: " + questionData.answers[questionData.correct]);
+            alert('Quiz is over!'); // Informera att quizet är slut
+            questionIndex = 0;  // Återställ frågeindexet
+            document.getElementById('quizContainer').style.display = 'none'; // Dölj quiz-sektionen
         }
+    }
 
-        currentQuestionIndex++;
+    return {
+        startQuiz,
+        nextQuestion
+    }
+})();
 
-        if (currentQuestionIndex < quizData[selectedSubject[0]].length) {
-            showQuestion();
-        } else {
-            alert('Quizet är slut!');
-            // Återställ quizet eller visa resultat
-            currentQuestionIndex = 0; // Återställ för nästa quiz
-            document.getElementById('quizContainer').style.display = 'none';
-            document.querySelector('.subject').style.display = 'block';
-        }
-    });
-});
