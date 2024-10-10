@@ -1,101 +1,104 @@
 import { quizData } from './questions.js';
 
-document.addEventListener('DOMContentLoaded', function() { 
+document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('startQuiz').addEventListener('click', EventHandlers.startQuiz);
     document.getElementById('nextQuestion').addEventListener('click', EventHandlers.nextQuestion);
+    document.getElementById('restartQuiz').addEventListener('click', restartQuiz);
     document.querySelectorAll('.subject-option').forEach(option => {
-        option.addEventListener('click', selectSubject); // se till att selectSubject är definierad
+        option.addEventListener('click', selectSubject);
     });
 });
 
-// Definiera funktionen selectSubject här
 function selectSubject(event) {
     const options = document.querySelectorAll('.subject-option');
-    options.forEach(option => option.classList.remove('selected')); // Ta bort 'selected' från alla alternativ
-    event.currentTarget.classList.add('selected'); // Lägg till 'selected' på det aktuella alternativet
+    options.forEach(option => option.classList.remove('selected'));
+    event.currentTarget.classList.add('selected');
 }
 
 let questionIndex = 0;
 let selectedSubject = "";
+let score = 0;
 
 let EventHandlers = (function() {
+    function getRandomQuestions(questionBox, numQuestions) {
+        const shuffled = questionBox.sort(() => 0.5 - Math.random());
+        return shuffled.slice(0, numQuestions);
+    }
+
     function startQuiz() {
         const selectedSubjectElement = document.querySelector('.subject-option.selected');
-
         if (selectedSubjectElement) {
-            selectedSubject = selectedSubjectElement.getAttribute('data-value'); // Hämta värdet från data-attributet
-
-            // Döljer ämnesval och texten när quizet startar
+            selectedSubject = selectedSubjectElement.getAttribute('data-value');
+            const questionBox = quizData[selectedSubject];
+            const randomQuestions = getRandomQuestions(questionBox, 5); // Slumpar 5 frågor
+            questionIndex = 0;
+            score = 0;
+            showQuestion(randomQuestions); // Passar in de slumpade frågorna
             document.getElementById('subjectSelection').style.display = 'none';
-                
-            // Visa quiz-delen
             document.getElementById('quizContainer').style.display = 'block';
-            showQuestion();
         } else {
-            alert("You have to select a subject to start the quiz!");
+            alert("Du måste välja ett ämne för att starta quizet!");
         }
     }
 
-    function showQuestion() {
-        const questionBox = quizData[selectedSubject]; // Använd rätt index för quizData
-        if (questionIndex < questionBox.length) { // Kontrollera om det finns fler frågor
-            const currentQuestion = questionBox[questionIndex];
+    function showQuestion(randomQuestions) {
+        if (questionIndex < randomQuestions.length) {
+            const currentQuestion = randomQuestions[questionIndex];
             document.getElementById('question').innerText = currentQuestion.question;
 
-            const answersContainer = document.querySelector('.parent'); 
-            answersContainer.innerHTML = '';  // Rensa tidigare svar
+            const answersContainer = document.querySelector('.parent');
+            answersContainer.innerHTML = '';
 
             currentQuestion.answers.forEach((answer, index) => {
                 const answerDiv = document.createElement('div');
                 answerDiv.innerText = answer;
-                answerDiv.classList.add(`div${index + 1}`); 
-                answerDiv.addEventListener('click', () => checkAnswer(index, answerDiv)); // Lägg till click-handler
+                answerDiv.classList.add(`div${index + 1}`);
+                answerDiv.addEventListener('click', () => checkAnswer(index, answerDiv, randomQuestions));
                 answersContainer.appendChild(answerDiv);
             });
 
-            document.getElementById('nextQuestion').style.display = 'none'; // Göm knappen tills användaren svarat
+            document.getElementById('nextQuestion').style.display = 'none';
         }
     }
 
-    function checkAnswer(selectedIndex, selectedDiv) {
-        const questionBox = quizData[selectedSubject];
-        const correctAnswerIndex = questionBox[questionIndex].correct;
+    function checkAnswer(selectedIndex, selectedDiv, randomQuestions) {
+        const correctAnswerIndex = randomQuestions[questionIndex].correct;
 
-        // Kontrollera om användarens svar är rätt
         if (selectedIndex === correctAnswerIndex) {
-            selectedDiv.style.border = "2px solid green"; // Grön ram för rätt svar
-            selectedDiv.style.borderRadius = "50%"; // Gör den rund
+            selectedDiv.style.border = "2px solid green";
+            selectedDiv.style.borderRadius = "50%";
+            score++;
         } else {
-            selectedDiv.style.border = "2px solid red"; // Röd ram för fel svar
-            selectedDiv.style.borderRadius = "50%"; // Gör den rund
+            selectedDiv.style.border = "20px solid red";
+            selectedDiv.style.borderRadius = "50%";
         }
 
-        // Visa den rätta svaret också med grön ram om det inte var det som valdes
         const answersContainer = document.querySelector('.parent');
         const correctAnswerDiv = answersContainer.children[correctAnswerIndex];
-        correctAnswerDiv.style.border = "2px solid green"; // Grön ram för rätt svar
-        correctAnswerDiv.style.borderRadius = "50%"; // Gör den rund
+        correctAnswerDiv.style.border = "20px solid green";
+        correctAnswerDiv.style.borderRadius = "50%";
 
-        // Visa knappen för nästa fråga efter att användaren har svarat
         document.getElementById('nextQuestion').style.display = 'block';
-
-        // Inaktivera klick på alla svar efter att ett val gjorts
         Array.from(answersContainer.children).forEach(child => {
-            child.style.pointerEvents = 'none'; // Inaktivera klick efter första valet
+            child.style.pointerEvents = 'none';
         });
     }
 
     function nextQuestion() {
         questionIndex++;
-        // Om vi fortfarande har frågor kvar, visa nästa fråga
         const questionBox = quizData[selectedSubject];
         if (questionIndex < questionBox.length) {
-            showQuestion();  // Ladda nästa fråga
+            showQuestion(questionBox);
         } else {
-            alert('Quiz is over!'); // Informera att quizet är slut
-            questionIndex = 0;  // Återställ frågeindexet
-            document.getElementById('quizContainer').style.display = 'none'; // Dölj quiz-sektionen
+            showResult();
         }
+    }
+
+    function showResult() {
+        document.getElementById('quizContainer').style.display = 'none';
+        document.querySelector('.result').classList.remove('hidden');
+        const totalQuestions = quizData[selectedSubject].length; 
+        document.getElementById('scoreText').innerText = `Du hade ${score} av ${totalQuestions} rätt!`;
     }
 
     return {
@@ -104,3 +107,9 @@ let EventHandlers = (function() {
     }
 })();
 
+function restartQuiz() {
+    questionIndex = 0;
+    score = 0;
+    document.querySelector('.result').classList.add('hidden');
+    document.getElementById('subjectSelection').style.display = 'block';
+}
