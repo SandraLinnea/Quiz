@@ -1,7 +1,7 @@
 export const quizData = {
     "Animal health care": [
         {
-            question: "What language does 'Sinister' mean 'left' in?",
+            question: "In what language does 'Sinister' mean 'left' in?",
             answers: ["English", "Latin", "French", "Greek"],
             correct: 1 
         },

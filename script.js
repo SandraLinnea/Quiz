@@ -18,6 +18,8 @@ function selectSubject(event) {
 let questionIndex = 0;
 let selectedSubject = "";
 let score = 0;
+let randomQuestions = [];
+let startTime;
 
 let EventHandlers = (function() {
     function getRandomQuestions(questionBox, numQuestions) {
@@ -25,15 +27,43 @@ let EventHandlers = (function() {
         return shuffled.slice(0, numQuestions);
     }
 
-    function startQuiz() {
+    async function fetchGeographyQuestions() {
+        try {
+            const response = await fetch('https://opentdb.com/api.php?amount=5&category=22&difficulty=easy&type=multiple');
+            const data = await response.json();
+            return data.results.map(item => ({
+                question: item.question,
+                answers: [...item.incorrect_answers, item.correct_answer].sort(() => Math.random() - 0.5),
+                correct: item.incorrect_answers.length
+            }));
+        } catch (error) {
+            console.error('Error fetching geography questions:', error);
+            return [];
+        }
+    }
+
+    async function startQuiz() {
         const selectedSubjectElement = document.querySelector('.subject-option.selected');
         if (selectedSubjectElement) {
             selectedSubject = selectedSubjectElement.getAttribute('data-value');
-            const questionBox = quizData[selectedSubject];
-            const randomQuestions = getRandomQuestions(questionBox, 5); // Slumpar 5 frågor
+
+            if (selectedSubject === "Sweden") {
+                const questionBox = quizData[selectedSubject];
+                randomQuestions = getRandomQuestions(questionBox, 5);
+            } else if (selectedSubject === "Geografi") {
+                randomQuestions = await fetchGeographyQuestions();
+            } else if (selectedSubject === "Animal health care") {
+                const questionBox = quizData[selectedSubject];
+                randomQuestions = getRandomQuestions(questionBox, 5);
+            } else {
+                alert("Valt ämne stöds inte.");
+                return;
+            }
+
+            startTime = Date.now(); 
             questionIndex = 0;
             score = 0;
-            showQuestion(randomQuestions); // Passar in de slumpade frågorna
+            showQuestion(randomQuestions);
             document.getElementById('subjectSelection').style.display = 'none';
             document.getElementById('quizContainer').style.display = 'block';
         } else {
@@ -86,9 +116,8 @@ let EventHandlers = (function() {
 
     function nextQuestion() {
         questionIndex++;
-        const questionBox = quizData[selectedSubject];
-        if (questionIndex < questionBox.length) {
-            showQuestion(questionBox);
+        if (questionIndex < randomQuestions.length) {
+            showQuestion(randomQuestions);
         } else {
             showResult();
         }
@@ -97,8 +126,25 @@ let EventHandlers = (function() {
     function showResult() {
         document.getElementById('quizContainer').style.display = 'none';
         document.querySelector('.result').classList.remove('hidden');
-        const totalQuestions = quizData[selectedSubject].length; 
-        document.getElementById('scoreText').innerText = `Du hade ${score} av ${totalQuestions} rätt!`;
+        const totalQuestions = randomQuestions.length; 
+
+        const endTime = Date.now();
+        const totalTime = endTime - startTime;
+
+        const seconds = Math.floor(totalTime / 1000);
+
+        document.getElementById('scoreText').innerText = `Du hade ${score} av ${totalQuestions} rätt! Du tog ${seconds} sekunder.`;
+
+        saveScore(seconds);
+    }
+
+    function saveScore(seconds) {
+        const bestScore = localStorage.getItem('bestScore');
+        const bestTime = localStorage.getItem('bestTime');
+        if (!bestScore || score > bestScore || (score === bestScore && seconds < bestTime)) {
+            localStorage.setItem('bestScore', score);
+            localStorage.setItem('bestTime', seconds);
+        }
     }
 
     return {
@@ -110,6 +156,8 @@ let EventHandlers = (function() {
 function restartQuiz() {
     questionIndex = 0;
     score = 0;
+    randomQuestions = [];
     document.querySelector('.result').classList.add('hidden');
     document.getElementById('subjectSelection').style.display = 'block';
 }
+
